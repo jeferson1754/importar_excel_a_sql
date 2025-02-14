@@ -25,30 +25,33 @@ if (isset($_POST["import"])) {
                 // Create a function to safely escape and retrieve values
 
                 // Use the function to set variables
-                $area = valor_excel($con, $Row, 0);
-                $cargo = valor_excel($con, $Row, 1);
-                $nombre = valor_excel($con, $Row, 2);
-                $documento = valor_excel($con, $Row, 3);
-                $tipo = valor_excel($con, $Row, 4);
-                $marca = valor_excel($con, $Row, 5);
-                $numero_serie = valor_excel($con, $Row, 7);
-                $fecha_entrega = valor_excel($con, $Row, 5);
+                $id_ticket = isset($Row[0]) ? $Row[0] : '';
+                $fecha_completa = isset($Row[1]) ? $Row[1] : '';
+                $fecha_creacion = isset($Row[2]) ? $Row[2] : '';
+                $hora_creacion = isset($Row[3]) ? trim($Row[3]) : '';
+
+                $fecha_final = isset($Row[4]) ? $Row[4] : '';
+                $fecha_termino = isset($Row[5]) ? $Row[5] : '';
+                $hora_termino = isset($Row[6]) ? trim($Row[6]) : '';
 
 
-                if (!empty($area) || !empty($cargo) || !empty($nombre) || !empty($numero_serie)) {
+                $fecha_inicio = formatear_fecha($fecha_creacion);
+                $fecha_fin = formatear_fecha($fecha_termino);
+
+                $hora_inicio = formatear_hora($hora_creacion);
+                $hora_fin = formatear_hora($hora_termino);
+
+                    
+
+                if (!empty($id_ticket) || !empty($fecha_creacion) || !empty($fecha_termino)) {
 
 
-                    $query = "insert into equipos(ID_Categoria, IMEI, Marca, Modelo, Detalle) values('" . $id_categoria . "','" . $area . "','" . $area . "','" . $area . "','" . $area . "');";
-                    echo $query . "<br>";
-                    //$resultados = mysqli_query($con, $query);
 
-                    if (! empty($resultados)) {
-                        $type = "success";
-                        $message = "Excel importado correctamente";
-                    } else {
-                        $type = "error";
-                        $message = "Hubo un problema al importar registros";
-                    }
+                    $update_tickets = "UPDATE `tickets` SET Fecha_creacion='$fecha_inicio $hora_inicio', Fecha_resolucion='$fecha_fin $hora_fin' WHERE ID= '$id_ticket';";
+
+
+                    echo "<br>" . $update_tickets;
+       
                 }
             }
         }
@@ -78,21 +81,7 @@ if (isset($_POST["import"])) {
 </head>
 
 <body>
-    <header>
-        <!-- Fixed navbar -->
-        <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark"> <a class="navbar-brand" href="#">BaulPHP</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"> <span class="navbar-toggler-icon"></span> </button>
-            <div class="collapse navbar-collapse" id="navbarCollapse">
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item active"> <a class="nav-link" href="index.php">Inicio <span class="sr-only">(current)</span></a> </li>
-                </ul>
-                <form class="form-inline mt-2 mt-md-0">
-                    <input class="form-control mr-sm-2" type="text" placeholder="Buscar" aria-label="Search">
-                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Busqueda</button>
-                </form>
-            </div>
-        </nav>
-    </header>
+
 
     <!-- Begin page content -->
 
@@ -117,48 +106,10 @@ if (isset($_POST["import"])) {
                     </form>
 
                 </div>
-                <div id="response" class="<?php if (!empty($type)) {
-                                                echo $type . " display-block";
-                                            } ?>"><?php if (!empty($message)) {
-                                                        echo $message;
-                                                    } ?></div>
 
 
-                <?php
-                $sqlSelect = "SELECT * FROM empleados";
-                $result = mysqli_query($con, $sqlSelect);
 
-                if (mysqli_num_rows($result) > 0) {
-                ?>
 
-                    <table class='tutorial-table'>
-                        <thead>
-                            <tr>
-                                <th>Nombres</th>
-                                <th>Cargo</th>
-                                <th>Celular</th>
-                                <th>Descripcion</th>
-
-                            </tr>
-                        </thead>
-                        <?php
-                        while ($row = mysqli_fetch_array($result)) {
-                        ?>
-                            <tbody>
-                                <tr>
-                                    <td><?php echo $row['Nombre_Completo']; ?></td>
-                                    <td><?php echo $row['Rut']; ?></td>
-                                    <td><?php echo $row['Cargo']; ?></td>
-                                    <td><?php echo $row['Correo']; ?></td>
-                                </tr>
-                            <?php
-                        }
-                            ?>
-                            </tbody>
-                    </table>
-                <?php
-                }
-                ?>
                 <!-- Fin Contenido -->
             </div>
         </div>
