@@ -28,25 +28,46 @@ if (isset($_POST["import"])) {
                 foreach ($Reader as $Row) {
 
                     // Verificación de datos antes de asignar
-                    $rut             = isset($Row[0]) ? trim($Row[0]) : '';
-                    $nombre_completo = isset($Row[1]) ? trim($Row[1]) : '';
-                    $estado          = isset($Row[2]) ? trim($Row[2]) : '';
-                    $cargo           = isset($Row[3]) ? trim($Row[3]) : '';
-                    $centro_costo    = isset($Row[4]) ? trim($Row[4]) : '';
-                    $fecha_ingreso   = isset($Row[5]) ? trim($Row[5]) : '';
-                    $id_departamento = isset($Row[6]) ? trim($Row[6]) : '';
+                    $fecha_original             = isset($Row[0]) ? trim($Row[0]) : '';
+                    
+                    if (!empty($fecha_original)) {
+                        $fecha = DateTime::createFromFormat('d/m/Y', $fecha_original);
 
-                    $rut_formateado = formatearRUT($rut);
-                    $id_empleado = buscarEmpleadoporRut($conexion, $rut_formateado);
-                    $correo = crear_correo_corporativo($nombre_completo, $conexion);
+                        if ($fecha) {
+                            $fecha_transformada = $fecha->format('Y-m-d');
+                        } else {
+                            $fecha_transformada = 'Fecha inválida'; // Manejo de error si la conversión falla
+                        }
+                    } else {
+                        $fecha_transformada = 'Fecha vacía';
+                    }
+
+
+                    $horas          = isset($Row[2]) ? trim($Row[2]) : '';
+                    if (!empty($horas)) {
+                        list($hora_inicio, $hora_fin) = explode(" - ", $horas);
+
+                        $segundosTotalHoras = strtotime($hora_fin) - strtotime($hora_inicio);
+                        $totalHoras = gmdate("H:i:s", $segundosTotalHoras);
+                    }
+
+                    $colacion = "14:20:00";
+
+                    $fin_colacion = "15:00:00";
+
+                    $segundosTotalColacion = strtotime($fin_colacion) - strtotime($colacion);
+                    $totalAlmuerzo = gmdate("H:i:s", $segundosTotalColacion);
+
+                    $segundosHorasFinales = $segundosTotalHoras - $segundosTotalColacion;
+                    $horasFinales = gmdate("H:i:s", max(0, $segundosHorasFinales)); // Evitar valores negativos
+
 
                     // Verificar que los campos esenciales no estén vacíos
-                    if ($id_empleado != 'No Existe' && !empty($rut_formateado) && !empty($estado)) {
-                        $update_empleados = "UPDATE empleados SET Nombre_Completo='$nombre_completo', Rut ='$rut_formateado', Cargo ='$cargo', Fecha_Ingreso ='$fecha_ingreso', Estado='$estado', ID_Departamento = '$id_departamento' WHERE ID='$id_empleado';";
-                        echo "<br>" . $update_empleados;
-                    } else if ($id_empleado == 'No Existe' && $estado == 'activo') {
-                        $update_empleados = " INSERT INTO `empleados`( `Nombre_Completo`, `Rut`, `Cargo`, `Correo`,`Fecha_Ingreso`, `Estado`, `ID_Departamento`) VALUES ('$nombre_completo','$rut_formateado','$cargo','$correo','$fecha_ingreso','$estado','$id_departamento');";
-                        echo "<br>" . $update_empleados;
+                    if (!empty($horas)) {
+
+                        $insert_horas = "INSERT INTO `horas`(`Dia`, `Hora Ingreso`, `Hora Colacion`, `Hora Fin Colacion`, `Total Colacion`, `Hora Salida`, `Total Horas`, `Horas Final`) VALUES ('$fecha_transformada','$hora_inicio','$colacion','$fin_colacion','$totalAlmuerzo','$hora_fin','$totalHoras','$horasFinales'); ";
+
+                        echo "<br>" . $insert_horas;
                     }
 
 

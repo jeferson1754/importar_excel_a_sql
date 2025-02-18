@@ -17,14 +17,22 @@ function acortarNombre($nombreCompleto)
     // Concatenar el nombre y apellido en el formato deseado
     return $primerNombre . ' ' . $primerApellido;
 }
+
+
+function limpiarTexto($texto)
+{
+    return iconv('UTF-8', 'ASCII//TRANSLIT', $texto);
+}
 function acortarCorreo($nombre_completo)
 {
+    // Eliminar tildes y caracteres especiales
+
     // Divide el nombre completo en partes
     $partes = explode(" ", $nombre_completo);
 
     // Toma la primera palabra como nombre y la penúltima como apellido
-    $nombre = strtolower($partes[0]); // El primer nombre
-    $apellido = strtolower($partes[count($partes) - 2]); // El penúltimo elemento como apellido
+    $nombre = limpiarTexto(strtolower($partes[0])); // El primer nombre
+    $apellido = limpiarTexto(strtolower($partes[count($partes) - 2])); // El penúltimo apellido
 
     // Combina nombre y apellido en el formato requerido
     $correo = "$nombre.$apellido@revesol.com";
@@ -38,18 +46,12 @@ function crear_correo_corporativo($nombre_completo, $conexion)
     $correo = acortarCorreo($nombre_completo);
 
     // Verifica si el correo ya existe en la base de datos
-    $consulta = "SELECT COUNT(*) AS total FROM empleados WHERE Correo = ?";
+    $consulta = "SELECT COUNT(*) FROM empleados WHERE Correo = :correo";
     $stmt = $conexion->prepare($consulta);
-    $stmt->bind_param("s", $correo);
+    $stmt->bindParam(':correo', $correo, PDO::PARAM_STR);
     $stmt->execute();
-    $resultado = $stmt->get_result()->fetch_assoc();
 
-    // Si ya existe, devuelve una cadena vacía
-    if ($resultado['total'] > 0) {
-        return "";  // El correo ya existe, devolvemos vacío
-    } else {
-        return $correo;  // El correo no existe, lo devolvemos
-    }
+    return ($stmt->fetchColumn() > 0) ? "Correo Existe" : $correo;
 }
 
 function formatoFecha($fecha)
@@ -175,7 +177,37 @@ function buscarEmpleado($conexion, $nombre)
         }
 
         // Si no se encuentra ninguna coincidencia
-        return "147"; // ID de Soporte
+        return ""; // ID de Soporte
+    } catch (PDOException $e) {
+        // Manejo de excepciones
+        error_log("Error en buscarEmpleado: " . $e->getMessage());
+        return null;
+    }
+}
+
+function buscarEmpleadoporRut($conexion, $rut)
+{
+    try {
+        // Dividir el nombre ingresado en palabras
+        $nombres = explode(' ', trim($rut));
+
+        // Generar el criterio para SQL usando '%' para coincidencia parcial
+        $criterioNombre = implode('%', $nombres);
+
+        // Consulta para buscar por coincidencia parcial del nombre completo
+        $consultaNombre = $conexion->prepare("
+            SELECT ID
+            FROM empleados
+            WHERE Rut LIKE :nombre
+        ");
+        $consultaNombre->execute([':nombre' => '%' . $criterioNombre . '%']);
+
+        // Si encuentra coincidencias, devolver el primer resultado
+        if ($consultaNombre->rowCount() > 0) {
+            return $consultaNombre->fetchColumn();
+        }
+        // Si no se encuentra ninguna coincidencia
+        return "No Existe"; // ID de Soporte
     } catch (PDOException $e) {
         // Manejo de excepciones
         error_log("Error en buscarEmpleado: " . $e->getMessage());
